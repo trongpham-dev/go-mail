@@ -1,23 +1,14 @@
 package main
 
 import (
-	"context"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/joho/godotenv"
-
-	"go-mail/common"
-	"go-mail/component"
-	mc "go-mail/modules"
-	am "go-mail/modules/amazon"
-	"go-mail/pubsub"
-
-	"go-mail/pubsub/pblocal"
-	"go-mail/subscriber"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -25,52 +16,53 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	// err := godotenv.Load(".env")
 
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	return
+	// }
 
-	m := mc.NewMailCrawl()
+	// m := mc.NewMailCrawl()
 
-	email1 := os.Getenv("MAIL_USER")
-	password1 := os.Getenv("MAIL_PASSWORD")
+	// email1 := os.Getenv("MAIL_USER")
+	// password1 := os.Getenv("MAIL_PASSWORD")
 
-	email2 := os.Getenv("MAIL_USER2")
-	password2 := os.Getenv("MAIL_PASSWORD2")
+	// email2 := os.Getenv("MAIL_USER2")
+	// password2 := os.Getenv("MAIL_PASSWORD2")
 
-	c1, err := m.MailConnection(email1, password1)
+	// c1, err := m.MailConnection(email1, password1)
 
-	if err != nil{
-		log.Fatal(err)
-	}
+	// if err != nil{
+	// 	log.Fatal(err)
+	// }
 
-	c2, err := m.MailConnection(email2, password2)
+	// c2, err := m.MailConnection(email2, password2)
 
-	if err != nil{
-		log.Fatal(err)
-	}
+	// if err != nil{
+	// 	log.Fatal(err)
+	// }
 
-	appCtx := component.NewAppContext(pblocal.NewPubSub())
+	// appCtx := component.NewAppContext(pblocal.NewPubSub())
 
-	//subscriber.Setup(appCtx)
-	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
-		log.Fatalln(err)
-	}
+	// //subscriber.Setup(appCtx)
+	// if err := subscriber.NewEngine(appCtx).Start(); err != nil {
+	// 	log.Fatalln(err)
+	// }
 
-	//publish ids mail to subscriber
-	for{			
-			ids := am.FindUnseenMail(c1)
-			if len(ids) > 0{
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
-			}
+	// //publish ids mail to subscriber
+	// for{			
+	// 		ids := am.FindUnseenMail(c1)
+	// 		if len(ids) > 0{
+	// 			appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
+	// 		}
 		
-			ids2 := am.FindUnseenMail(c2)
-			if len(ids2) > 0{ 
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
-			}
-	}
+	// 		ids2 := am.FindUnseenMail(c2)
+	// 		if len(ids2) > 0{ 
+	// 			appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
+	// 		}
+	// }
+	start()
 }
 
 func start(){
@@ -130,7 +122,7 @@ func start(){
 	// Set search criteria
 	criteria := imap.NewSearchCriteria()
 	criteria.WithoutFlags = []string{imap.SeenFlag}
-	criteria.Text = []string{"Congratulations! You just sold an item on Amazon!"}
+	criteria.Text = []string{"Congratulations on your Etsy"}
 	ids, err := c.Search(criteria)
 	
 	if err != nil {
@@ -193,7 +185,7 @@ func start(){
 			// }
 
 			// Process each message's part
-			i := 0
+			// i := 0
 			for {
 				p, err := mr.NextPart()
 				if err == io.EOF {
@@ -205,26 +197,54 @@ func start(){
 				switch h := p.Header.(type) {
 					case *mail.InlineHeader:
 						// This is the message's text (can be plain-text or HTML)
-						b, _ := ioutil.ReadAll(p.Body)
-						text := string(b)
-						if i == 0 {
-							rs := findOrderInfor(text)
-							log.Println("=====================================")
-							log.Println(rs.ShipBy)	
-							log.Println(rs.Item)	
-							log.Println(rs.Condition)
-							log.Println(rs.SKU)
-							log.Println(rs.Quantity)
-							log.Println(rs.OrderDate)
-							log.Println(rs.Price)
-							log.Println(rs.Tax)
-							log.Println(rs.Promotions)
-							log.Println(rs.AmazonFee)
-							log.Println(rs.MarketPlaceFacilitatorTax)
-							log.Println(rs.YourEarning)
-							log.Println("=====================================")
-							i++
-						}		
+						// b, _ := ioutil.ReadAll(p.Body)
+
+						// Load the HTML document
+  						doc, err := goquery.NewDocumentFromReader(p.Body)
+
+						if err != nil {
+							panic(err)
+						}
+
+						doc.Find(`td[valign="top"][style="line-height:0px"]`).Each(func(i int, s *goquery.Selection) {
+
+							sl := s.Find(`div[style*="font-family:arial,helvetica,sans-serif;"]`)
+								for idx := range sl.Nodes{
+									if sl.Eq(idx).Find(`a[style="text-decoration:none;color:#222222"]`).Text() != ""{
+										break
+									}
+
+									rs := strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""),"  ", "",-1)
+										log.Println(rs)
+								}
+						})
+
+						// fmt.Println(doc)
+						
+						// text := string(b)
+						// text2, err := html2text.FromString(text, html2text.Options{PrettyTables: true})
+						// if err != nil {
+						// 	panic(err)
+						// }
+						// fmt.Println(text2)
+						// if i == 0 {
+						// 	rs := findOrderInfor(text)
+						// 	log.Println("=====================================")
+						// 	log.Println(rs.ShipBy)	
+						// 	log.Println(rs.Item)	
+						// 	log.Println(rs.Condition)
+						// 	log.Println(rs.SKU)
+						// 	log.Println(rs.Quantity)
+						// 	log.Println(rs.OrderDate)
+						// 	log.Println(rs.Price)
+						// 	log.Println(rs.Tax)
+						// 	log.Println(rs.Promotions)
+						// 	log.Println(rs.AmazonFee)
+						// 	log.Println(rs.MarketPlaceFacilitatorTax)
+						// 	log.Println(rs.YourEarning)
+						// 	log.Println("=====================================")
+						// 	i++
+						// }		
 					case *mail.AttachmentHeader:
 						// This is an attachment
 						filename, _ := h.Filename()
