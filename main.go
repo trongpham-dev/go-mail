@@ -1,6 +1,13 @@
 package main
 
 import (
+	"context"
+	"go-mail/common"
+	"go-mail/component"
+	mailcrawl "go-mail/modules"
+	"go-mail/pubsub"
+	"go-mail/pubsub/pblocal"
+	"go-mail/subscriber"
 	"io"
 	"log"
 	"os"
@@ -16,53 +23,53 @@ import (
 )
 
 func main() {
-	// err := godotenv.Load(".env")
+	err := godotenv.Load(".env")
 
-	// if err != nil {
-	// 	log.Fatal(err)
-	// 	return
-	// }
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
-	// m := mc.NewMailCrawl()
+	m := mailcrawl.NewMailCrawl()
 
-	// email1 := os.Getenv("MAIL_USER")
-	// password1 := os.Getenv("MAIL_PASSWORD")
+	email1 := os.Getenv("MAIL_USER")
+	password1 := os.Getenv("MAIL_PASSWORD")
 
-	// email2 := os.Getenv("MAIL_USER2")
-	// password2 := os.Getenv("MAIL_PASSWORD2")
+	email2 := os.Getenv("MAIL_USER2")
+	password2 := os.Getenv("MAIL_PASSWORD2")
 
-	// c1, err := m.MailConnection(email1, password1)
+	c1, err := m.MailConnection(email1, password1)
 
-	// if err != nil{
-	// 	log.Fatal(err)
-	// }
+	if err != nil{
+		log.Fatal(err)
+	}
 
-	// c2, err := m.MailConnection(email2, password2)
+	c2, err := m.MailConnection(email2, password2)
 
-	// if err != nil{
-	// 	log.Fatal(err)
-	// }
+	if err != nil{
+		log.Fatal(err)
+	}
 
-	// appCtx := component.NewAppContext(pblocal.NewPubSub())
+	appCtx := component.NewAppContext(pblocal.NewPubSub())
 
-	// //subscriber.Setup(appCtx)
-	// if err := subscriber.NewEngine(appCtx).Start(); err != nil {
-	// 	log.Fatalln(err)
-	// }
+	//subscriber.Setup(appCtx)
+	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
+		log.Fatalln(err)
+	}
 
-	// //publish ids mail to subscriber
-	// for{			
-	// 		ids := am.FindUnseenMail(c1)
-	// 		if len(ids) > 0{
-	// 			appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
-	// 		}
+	//publish ids mail to subscriber
+	for{			
+			ids := m.FindUnseenMail(c1)
+			if len(ids) > 0{
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
+			}
 		
-	// 		ids2 := am.FindUnseenMail(c2)
-	// 		if len(ids2) > 0{ 
-	// 			appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
-	// 		}
-	// }
-	start()
+			ids2 := m.FindUnseenMail(c2)
+			if len(ids2) > 0{ 
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
+			}
+	}
+	// start()
 }
 
 func start(){
@@ -120,15 +127,31 @@ func start(){
 	}
 
 	// Set search criteria
-	criteria := imap.NewSearchCriteria()
-	criteria.WithoutFlags = []string{imap.SeenFlag}
-	criteria.Text = []string{"Congratulations on your Etsy"}
-	ids, err := c.Search(criteria)
+	// Set search criteria
+	criteria1 := imap.NewSearchCriteria()
+	// criteria2 := imap.NewSearchCriteria()
+
+	criteria1.WithoutFlags = []string{imap.SeenFlag}
+	criteria1.Text = []string{"Congratulations on your Etsy"}
 	
+
+	// criteria2.WithoutFlags = []string{imap.SeenFlag}
+	// criteria2.Text = []string{"Congratulations! You just sold an item on Amazon!"}
+
+	
+	ids, err := c.Search(criteria1)
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// ids2, err := c.Search(criteria1)
+	
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	log.Println("Mails found:", ids)
+	// log.Println("Mails found:", ids2)
 
 	if len(ids) > 0 {
 		seqset := new(imap.SeqSet)
@@ -169,20 +192,20 @@ func start(){
 				log.Fatal(err)
 			}
 
-				// Print some info about the message
-			// header := mr.Header
-			// if date, err := header.Date(); err == nil {
-			// 	log.Println("Date:", date)
-			// }
-			// if from, err := header.AddressList("From"); err == nil {
-			// 	log.Println("From:", from)
-			// }
-			// if to, err := header.AddressList("To"); err == nil {
-			// 	log.Println("To:", to)
-			// }
-			// if subject, err := header.Subject(); err == nil {
-			// 	log.Println("Subject:", subject)
-			// }
+			// Print some info about the message
+			header := mr.Header
+			if date, err := header.Date(); err == nil {
+				log.Println("Date:", date)
+			}
+			if from, err := header.AddressList("From"); err == nil {
+				log.Println("From:", from)
+			}
+			if to, err := header.AddressList("To"); err == nil {
+				log.Println("To:", to)
+			}
+			if subject, err := header.Subject(); err == nil {
+				log.Println("Subject:", subject)
+			}
 
 			// Process each message's part
 			// i := 0
