@@ -1,8 +1,8 @@
 package mailcrawl
 
 import (
-	"io"
-	"io/ioutil"
+	"go-mail/modules/amazon"
+	"go-mail/modules/etsy"
 	"log"
 	"regexp"
 
@@ -50,29 +50,35 @@ func (m *mailCrawl) FindUnseenMail(c *client.Client) []uint32 {
 	// Set search criteria
 	criteria1 := imap.NewSearchCriteria()
 	criteria2 := imap.NewSearchCriteria()
+	criteria3 := imap.NewSearchCriteria()
 
 	criteria1.WithoutFlags = []string{imap.SeenFlag}
 	criteria1.Text = []string{"Congratulations! You just sold an item on Amazon!"}
 
 	criteria2.WithoutFlags = []string{imap.SeenFlag}
 	criteria2.Text = []string{"Congratulations on your Etsy"}
+	criteria3.Or = [][2]*imap.SearchCriteria{
+		{criteria1, criteria2},
+	}
+
 	
-	ids, err := c.Search(criteria1)
+	ids, err := c.Search(criteria3)
 
 	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
 
-	id2, err := c.Search(criteria2)
+	// id2, err := c.Search(criteria2)
 
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	return nil
+	// }
 
 	
-	return append(ids, id2...)
+	// return append(ids, id2...)
+	return ids
 }
 
 
@@ -113,6 +119,18 @@ type amazonOrderInfo struct {
 // 	}
 // 	return ids
 // }
+
+func contains(s []*mail.Address, str string) bool {
+	for _, v := range s {
+		log.Println(v.Address)
+		if v.Address == str {
+			
+			return true
+		}
+	}
+
+	return false
+}
 
 func Crawl(c *client.Client, ids []uint32) error{
 	if len(ids) > 0 {
@@ -155,47 +173,62 @@ func Crawl(c *client.Client, ids []uint32) error{
 				log.Fatal(err)
 				return err
 			}
-			
-			i := 0
-			for {
-				p, err := mr.NextPart()
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					log.Fatal(err)
-					return err
-				}
 
-				switch h := p.Header.(type) {
-					case *mail.InlineHeader:
-						// This is the message's text (can be plain-text or HTML)
-						b, _ := ioutil.ReadAll(p.Body)
-						text := string(b)
-						if i == 0 {
-							rs := FindOrderInfor(text)
-							log.Println("=====================================")
-							log.Println(rs.ShipBy)	
-							log.Println(rs.Item)	
-							log.Println(rs.Condition)
-							log.Println(rs.SKU)
-							log.Println(rs.Quantity)
-							log.Println(rs.OrderDate)
-							log.Println(rs.Price)
-							log.Println(rs.Tax)
-							log.Println(rs.Promotions)
-							log.Println(rs.AmazonFee)
-							log.Println(rs.MarketPlaceFacilitatorTax)
-							log.Println(rs.YourEarning)
-							log.Println("=====================================")
-							i++
-						}		
-					case *mail.AttachmentHeader:
-						// This is an attachment
-						filename, _ := h.Filename()
-						log.Println("Got attachment: %v", filename)
-				}
+			header := mr.Header
+			from, err := header.AddressList("From")
 
+			if err != nil{
+				log.Fatal(err)
+				return err
 			}
+
+			if contains(from, "uylongpham2910@gmail.com"){
+				log.Println("etsy")
+				etsy.CrawlEtsy(mr)
+			}else{
+				amazon.CrawlAmazonn(mr)
+			}
+			
+			// i := 0
+			// for {
+			// 	p, err := mr.NextPart()
+			// 	if err == io.EOF {
+			// 		break
+			// 	} else if err != nil {
+			// 		log.Fatal(err)
+			// 		return err
+			// 	}
+
+			// 	switch h := p.Header.(type) {
+			// 		case *mail.InlineHeader:
+			// 			// This is the message's text (can be plain-text or HTML)
+			// 			b, _ := ioutil.ReadAll(p.Body)
+			// 			text := string(b)
+			// 			if i == 0 {
+			// 				rs := FindOrderInfor(text)
+			// 				log.Println("=====================================")
+			// 				log.Println(rs.ShipBy)	
+			// 				log.Println(rs.Item)	
+			// 				log.Println(rs.Condition)
+			// 				log.Println(rs.SKU)
+			// 				log.Println(rs.Quantity)
+			// 				log.Println(rs.OrderDate)
+			// 				log.Println(rs.Price)
+			// 				log.Println(rs.Tax)
+			// 				log.Println(rs.Promotions)
+			// 				log.Println(rs.AmazonFee)
+			// 				log.Println(rs.MarketPlaceFacilitatorTax)
+			// 				log.Println(rs.YourEarning)
+			// 				log.Println("=====================================")
+			// 				i++
+			// 			}		
+			// 		case *mail.AttachmentHeader:
+			// 			// This is an attachment
+			// 			filename, _ := h.Filename()
+			// 			log.Println("Got attachment: %v", filename)
+			// 	}
+
+			// }
 		}
 	}
 	return nil
@@ -208,6 +241,7 @@ func FindOrderInfor(t string) *amazonOrderInfo {
 	//extracting Ship By
 	pattern := regexp.MustCompile("Ship by:\\s+([\\d/]+)")
 	rs.ShipBy =  pattern.FindString(t)
+	rs.ShipBy = rs.ShipBy[8:len(rs.ShipBy)]
 
 	//extracting item name
 	pattern = regexp.MustCompile("Item:\\s+(\\S+)")

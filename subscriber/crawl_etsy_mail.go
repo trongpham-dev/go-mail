@@ -3,7 +3,7 @@ package subscriber
 import (
 	"context"
 	"go-mail/component"
-	"go-mail/modules/amazon"
+	mailcrawl "go-mail/modules"
 	"go-mail/pubsub"
 	"log"
 )
@@ -14,7 +14,7 @@ func RunCrawlEtsyMailData(appCtx component.AppContext) consumerJob {
 		Hld: func(ctx context.Context, message *pubsub.Message) error {
 			
 			log.Println(message.Data().Ids)
-			return amazon.Crawl(message.Data().Client, message.Data().Ids)
+			return mailcrawl.Crawl(message.Data().Client, message.Data().Ids)
 		},
 	}
 }

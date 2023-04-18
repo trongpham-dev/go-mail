@@ -58,18 +58,18 @@ func main() {
 	}
 
 	//publish ids mail to subscriber
-	for{			
+	for{	
 			ids := m.FindUnseenMail(c1)
 			if len(ids) > 0{
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
-			}
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client:c1, Ids: ids}))
+			}	
 		
 			ids2 := m.FindUnseenMail(c2)
 			if len(ids2) > 0{ 
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlAmazonMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client:c2, Ids: ids2}))
 			}
 	}
-	// start()
+	//  start()
 }
 
 func start(){
