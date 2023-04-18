@@ -1,24 +1,87 @@
 package etsy
 
+import (
+	"regexp"
+	"strconv"
+)
+
+type EtsyOrderRecord struct {
+	Records []EtsyFieldOrder `json:records`
+}
+
+type EtsyFieldOrder struct {
+	Fields EtsyOrder `json:fields`
+}
+
+type EtsyOrderDetailRecord struct {
+	Records []EtsyFieldOrder `json:records`
+}
+
+type EtsyFieldOrderDetail struct {
+	Fields EtsyOrder `json:fields`
+}
+
 type EtsyOrderDetail struct {
-	OrderId     string `json:order_id`
-	OrderDate   string `json:order_date`
-	ItemTotal   string `json:revenue`
-	ShippingFee string `json:shipping_fee`
-	SalesTax    string `json:platform_fee`
-	Discount    string `json:promotions`
-	OrderTotal  string `json:earning`
+	OrderId     string  `json:order_id`
+	OrderDate   string  `json:order_date`
+	ItemTotal   float32 `json:revenue`
+	ShippingFee float32 `json:shipping_fee`
+	SalesTax    float32 `json:platform_fee`
+	Discount    float32 `json:promotions`
+	OrderTotal  float32 `json:earning`
 }
 
 type EtsyOrder struct {
-	OrderId              string `json:order_id`
-	TransactionId        string `json:transaction_id`
-	ProductName          string `json:product_name`
-	Quantity             string `json:quantity`
-	Price                string `json:price`
-	Personalization      string `json:personalization`
-	ProductType          string `json:product_type`
-	Personalization_Note string `json:personalization_note`
+	OrderId              string  `json:order_id`
+	TransactionId        string  `json:transaction_id`
+	ProductName          string  `json:product_name`
+	Quantity             uint32  `json:quantity`
+	Price                float32 `json:price`
+	Personalization      string  `json:omitted;`
+	ProductType          string  `json:product_type`
+	Personalization_Note string  `json:personalization_note`
+}
+
+func ExtractEtsyOrder(t string, rs *EtsyOrder) {
+	//TransactionId
+	pattern := regexp.MustCompile("Transaction ID:\\s+(\\S+)")
+	match := pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		rs.TransactionId = match[1]
+	}
+
+	//ProductName
+	pattern = regexp.MustCompile("Item:\\s+(.+)")
+	match = pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		rs.ProductName = match[1]
+	}
+
+	pattern = regexp.MustCompile("Quantity:\\s+(\\d+)")
+	match = pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		quantity, _ := strconv.Atoi(match[1])
+		rs.Quantity = uint32(quantity)
+	}
+
+	pattern = regexp.MustCompile("Price:\\s+\\-?\\$(\\d+\\.\\d+)")
+	match = pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		price, _ := strconv.ParseFloat(match[1], 32)
+		rs.Price = float32(price)
+	}
+
+	pattern = regexp.MustCompile("Personalization:\\s+(\\S+)")
+	match = pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		if match[1] != "" {
+			rs.ProductType = "Personalization"
+			rs.Personalization_Note = match[1]
+		} else {
+			rs.ProductType = "Normal"
+		}
+	}
+
 }
 
 // func FindOrderInfor(t string, rs *EtsyOrder)  {
@@ -79,7 +142,7 @@ type EtsyOrder struct {
 // 	rs.Promotions = rs.Promotions[12:len(rs.Promotions)]
 
 // 	//extracting Amazregexp
-// 	pattern = regexp.MustCompile("Amazon fees:\\s+-\\$(\\d+\\.\\d+)")
+// 	pattern = regexp.MustCompile("Amazon fees:\\s+-\\$(\\d+\\.\regexp
 // 	rs.AmazonFee = pattern.FindString(t)
 // 	rs.AmazonFee = rs.AmazonFee[13:len(rs.AmazonFee)]
 
