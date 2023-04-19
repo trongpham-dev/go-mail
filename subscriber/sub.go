@@ -25,45 +25,11 @@ func NewEngine(appContext component.AppContext) *consumerEngine {
 func (engine *consumerEngine) Start() error {
 	//ps := engine.appCtx.GetPubsub()
 
-	//engine.startSubTopic(common.ChanNoteCreated, asyncjob.NewGroup(
-	//	false,
-	//	asyncjob.NewJob(SendNotificationAfterCreateNote(engine.appCtx, context.Background(), nil))),
-	//)
-	//
-
-	//engine.startSubTopic(
-	//	common.TopicNoteCreated,
-	//	true,
-	//	DeleteImageRecordAfterCreateNote(engine.appCtx),
-	//	SendEmailAfterCreateNote(engine.appCtx),
-	//	EmitRealtimeAfterCreateNote(engine.appCtx, rtEngine),
-	//)
-
-	//engine.startSubTopic(
-	//	common.TopicNoteCreated,
-	//	false,
-	//	DeleteImageRecordAfterCreateNote(engine.appCtx),
-	//	SendEmailAfterCreateNote(engine.appCtx),
-	//)
-	// Many sub on a topic
-
-	// engine.startSubTopic(
-	// 	common.TopicUserLikeRestaurant,
-	// 	true,
-	// 	RunIncreaseLikeCountAfterUserLikeRestaurant(engine.appCtx),
-	// )
-
 	engine.startSubTopic(
 		common.TopicCrawlMail,
 		true,
 		RunCrawlAmazonMailData(engine.appCtx),
 	)
-	
-	// engine.startSubTopic(
-	// 	common.TopicCrawlMail,
-	// 	true,
-	// 	RunCrawlEtsyMailData(engine.appCtx),
-	// )
 	return nil
 }
 

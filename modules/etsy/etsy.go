@@ -1,21 +1,34 @@
 package etsy
 
 import (
+	"github.com/PuerkitoBio/goquery"
+	"github.com/emersion/go-message/mail"
 	"io"
 	"log"
 	"regexp"
 	"strings"
-
-	"github.com/PuerkitoBio/goquery"
-	"github.com/emersion/go-message/mail"
 )
 
-var orderId string
-var orderStr strings.Builder
-var arrEtsyOrder []EtsyFieldOrder
-var etsyOrder EtsyOrder
+type etSy struct {
+	idx                  int
+	orderId              string
+	orderStr             strings.Builder
+	orderDetailStr       strings.Builder
+	arrEtsyOrder         []EtsyFieldOrder
+	arrEtsyOrderDetail   []EtsyFieldOrderDetail
+	etsyOrder            EtsyOrder
+	etsyFieldOrder       EtsyFieldOrder
+	etsyOrderDetail      EtsyOrderDetail
+	etsyFieldOrderDetail EtsyFieldOrderDetail
+	count                int
+}
 
-func CrawlEtsy(mr *mail.Reader) {
+func NewEtsy() *etSy {
+	return &etSy{}
+}
+
+func (e *etSy) CrawlEtsy(mr *mail.Reader) {
+	e.count = 0
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {
@@ -36,50 +49,66 @@ func CrawlEtsy(mr *mail.Reader) {
 				pattern := regexp.MustCompile("Your order number is:\\s+(\\S+)")
 				match := pattern.FindStringSubmatch(s.Text())
 				if len(match) > 0 {
-					orderId = match[1]
-					orderStr.WriteString(orderId + "\n")
+					e.orderId = match[1]
+					e.orderStr.WriteString(e.orderId + "\n")
 				}
 			})
 
 			doc.Find(`td[valign="top"][style="line-height:0px"]`).Each(func(i int, s *goquery.Selection) {
+				e.orderStr = strings.Builder{}
+				e.etsyOrder = EtsyOrder{}
+				i = 0
 				if len(s.Nodes) > 0 {
-					// arr := make([]interface{}, len(s.Nodes))
+					e.arrEtsyOrder = make([]EtsyFieldOrder, len(s.Nodes))
 
 					sl := s.Find(`div[style*="font-family:arial,helvetica,sans-serif;"]`)
 					for idx := range sl.Nodes {
 						if sl.Eq(idx).Find(`a[style="text-decoration:none;color:#222222"]`).Text() != "" {
-							break
+							return
 						}
 
 						if sl.Eq(idx).Find(`a[style="text-decoration:none;color:#444444"]`).Text() != "" {
 							// log.Println("Item:", strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""), "  ", "", -1))
-							orderStr.WriteString("Item: " + sl.Eq(idx).Text())
+							e.orderStr.WriteString("Item: " + strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""), "  ", "", -1))
 							continue
 						}
 
-						rs := sl.Eq(idx).Text()
-						orderStr.WriteString(rs + "\n")
-						ExtractEtsyOrder(orderStr.String(), &etsyOrder)
-						etsyOrder.OrderId = orderId
+						rs := strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""), "  ", "", -1)
+						e.orderStr.WriteString(rs + "\n")
 
-						log.Println("=====================================")
-						log.Println(etsyOrder.OrderId)
-						log.Println(etsyOrder.TransactionId)
-						log.Println(etsyOrder.ProductName)
-						log.Println(etsyOrder.Quantity)
-						log.Println(etsyOrder.Price)
-						log.Println(etsyOrder.ProductType)
-						log.Println(etsyOrder.Personalization_Note)
-						log.Println("=====================================")
+						e.etsyOrder.OrderId = e.orderId
 					}
+					ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
+
+					e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
+					i = i + 1
+
+					etsyOrderRecords := NewEtsyOrderRecord(e.arrEtsyOrder)
+					CreateEtsyOrder(etsyOrderRecords)
 				}
 			})
 
 			//
+			e.orderDetailStr = strings.Builder{}
+			e.etsyOrderDetail = EtsyOrderDetail{}
 			doc.Find(`td[style="border-collapse:collapse;text-align:left"]`).Each(func(i int, s *goquery.Selection) {
-				// tdRight := s.Next()
-				// log.Println(strings.ReplaceAll(strings.ReplaceAll(s.Text(), "\n", ""), "  ", ""), strings.ReplaceAll(strings.ReplaceAll(tdRight.Text(), "\n", ""), "  ", ""))
+				tdRight := s.Next()
+				field := strings.ReplaceAll(strings.ReplaceAll(s.Text(), "\n", ""), "  ", "")
+				val := strings.ReplaceAll(strings.ReplaceAll(tdRight.Text(), "\n", ""), "  ", "")
+				rs := field + val
+				e.orderDetailStr.WriteString(rs + "\n")
+				t := e.orderDetailStr.String()
+				ExtractEtsyOrderDetail(t, &e.etsyOrderDetail)
 			})
+
+			if e.count > 0 {
+				e.arrEtsyOrderDetail = make([]EtsyFieldOrderDetail, 1)
+				e.etsyOrderDetail.OrderId = e.orderId
+				e.arrEtsyOrderDetail[0] = NewEtsyFieldOrderDetail(e.etsyOrderDetail)
+				etsyOrderDetailRecords := NewEtsyOrderDetailRecord(e.arrEtsyOrderDetail)
+				CreateEtsyOrderDetail(etsyOrderDetailRecords)
+			}
+			e.count = e.count + 1
 
 		case *mail.AttachmentHeader:
 			// This is an attachment
