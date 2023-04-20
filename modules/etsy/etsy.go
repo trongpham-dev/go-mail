@@ -79,12 +79,14 @@ func (e *etSy) CrawlEtsy(mr *mail.Reader) {
 						e.etsyOrder.OrderId = e.orderId
 					}
 					ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
+					if e.etsyOrder.TransactionId != "" {
 
-					e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
-					i = i + 1
+						e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
+						i = i + 1
 
-					etsyOrderRecords := NewEtsyOrderRecord(e.arrEtsyOrder)
-					CreateEtsyOrder(etsyOrderRecords)
+						etsyOrderRecords := NewEtsyOrderRecord(e.arrEtsyOrder)
+						CreateEtsyOrder(etsyOrderRecords)
+					}
 				}
 			})
 

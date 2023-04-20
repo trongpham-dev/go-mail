@@ -1,6 +1,7 @@
 package mailcrawl
 
 import (
+	"go-mail/component"
 	"go-mail/modules/amazon"
 	"go-mail/modules/etsy"
 	"log"
@@ -98,7 +99,7 @@ func contains(s []*mail.Address, str string) bool {
 	return false
 }
 
-func Crawl(c *client.Client, ids []uint32) error {
+func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []uint32) error {
 	if len(ids) > 0 {
 		seqset := new(imap.SeqSet)
 		seqset.AddNum(ids...)
@@ -107,7 +108,7 @@ func Crawl(c *client.Client, ids []uint32) error {
 		var section imap.BodySectionName
 		items := []imap.FetchItem{section.FetchItem()}
 
-		messages := make(chan *imap.Message, 10)
+		messages := make(chan *imap.Message, 150)
 		done := make(chan error, 1)
 
 		go func() {
@@ -122,7 +123,6 @@ func Crawl(c *client.Client, ids []uint32) error {
 		log.Println("Unseen messages:")
 
 		for msg := range messages {
-
 			if msg == nil {
 				log.Fatal("Server didn't returned message")
 			}
@@ -156,6 +156,8 @@ func Crawl(c *client.Client, ids []uint32) error {
 			}
 		}
 	}
+	//remove all mails from cache.
+	appCtx.GetCaching().Write(c.Mailbox().Name, []uint32{})
 	return nil
 }
 

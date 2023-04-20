@@ -28,7 +28,7 @@ func (engine *consumerEngine) Start() error {
 	engine.startSubTopic(
 		common.TopicCrawlMail,
 		true,
-		RunCrawlAmazonMailData(engine.appCtx),
+		RunCrawlMailData(engine.appCtx),
 	)
 	return nil
 }

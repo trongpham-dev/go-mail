@@ -207,7 +207,7 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/Ino8b0grMagPHSsHB2ilT1jugd9/tables/tblXTrz3jegViPAu/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer u-2y0ydDOl5bHW42Xyq7kzrX547k9Llg1HhqG001002LaM")
+	req.Header.Set("Authorization", "Bearer u-0WwhH0v.h8C81c_98sveT4547QHLlgz1oGG0kgk02HrB")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -229,7 +229,7 @@ func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/Ino8b0grMagPHSsHB2ilT1jugd9/tables/tblZI56X5A27vfqn/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer u-2y0ydDOl5bHW42Xyq7kzrX547k9Llg1HhqG001002LaM")
+	req.Header.Set("Authorization", "Bearer u-0WwhH0v.h8C81c_98sveT4547QHLlgz1oGG0kgk02HrB")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
