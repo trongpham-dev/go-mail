@@ -37,6 +37,15 @@ func main() {
 	email2 := os.Getenv("MAIL_USER2")
 	password2 := os.Getenv("MAIL_PASSWORD2")
 
+	email3 := os.Getenv("MAIL_USER3")
+	password3 := os.Getenv("MAIL_PASSWORD3")
+
+	email4 := os.Getenv("MAIL_USER4")
+	password4 := os.Getenv("MAIL_PASSWORD4")
+
+	//email5 := os.Getenv("MAIL_USER5")
+	//password5 := os.Getenv("MAIL_PASSWORD5")
+
 	c1, err := m.MailConnection(email1, password1)
 
 	if err != nil {
@@ -48,6 +57,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	c3, err := m.MailConnection(email3, password3)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c4, err := m.MailConnection(email4, password4)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//c4, err := m.MailConnection(email4, password4)
+	//
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	appCtx := component.NewAppContext(pblocal.NewPubSub(), memcache.NewCaching())
 
@@ -59,7 +85,7 @@ func main() {
 	//publish ids mail to subscriber
 	var wg sync.WaitGroup
 	for {
-		wg.Add(2)
+		wg.Add(4)
 		go func() {
 			defer wg.Done()
 			ids := m.FindUnseenMail(c1)
@@ -81,6 +107,30 @@ func main() {
 				}
 				appCtx.GetCaching().Write(c2.Mailbox().Name, ids2)
 				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c2, Ids: ids2}))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			ids2 := m.FindUnseenMail(c3)
+			if len(ids2) > 0 {
+				if len(appCtx.GetCaching().Read(c3.Mailbox().Name)) > 0 {
+					return
+				}
+				appCtx.GetCaching().Write(c3.Mailbox().Name, ids2)
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c3, Ids: ids2}))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			ids2 := m.FindUnseenMail(c4)
+			if len(ids2) > 0 {
+				if len(appCtx.GetCaching().Read(c4.Mailbox().Name)) > 0 {
+					return
+				}
+				appCtx.GetCaching().Write(c4.Mailbox().Name, ids2)
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c4, Ids: ids2}))
 			}
 		}()
 

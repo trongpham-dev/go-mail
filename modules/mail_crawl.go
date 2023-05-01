@@ -2,7 +2,6 @@ package mailcrawl
 
 import (
 	"go-mail/component"
-	"go-mail/modules/amazon"
 	"go-mail/modules/etsy"
 	"log"
 	"regexp"
@@ -108,7 +107,7 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 		var section imap.BodySectionName
 		items := []imap.FetchItem{section.FetchItem()}
 
-		messages := make(chan *imap.Message, 150)
+		messages := make(chan *imap.Message, 10000)
 		done := make(chan error, 1)
 
 		go func() {
@@ -148,11 +147,9 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 				return err
 			}
 
-			if contains(from, "uylongpham2910@gmail.com") {
+			if contains(from, "transaction@etsy.com") {
 				etsy := etsy.NewEtsy()
-				etsy.CrawlEtsy(mr)
-			} else {
-				amazon.CrawlAmazonn(mr)
+				etsy.CrawlEtsy(appCtx, mr)
 			}
 		}
 	}
