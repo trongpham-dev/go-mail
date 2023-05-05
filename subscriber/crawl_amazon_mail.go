@@ -12,7 +12,7 @@ func RunCrawlMailData(appCtx component.AppContext) consumerJob {
 		Title: "Crawling Mail Data",
 		Hld: func(ctx context.Context, message *pubsub.Message) error {
 			m := mailcrawl.NewMailCrawl()
-			return m.Crawl(appCtx, message.Data().Client, message.Data().Ids)
+			return m.Crawl(appCtx, message.Data().Client, message.Data().Ids, message.Data().Mail)
 		},
 	}
 }

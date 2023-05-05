@@ -2,11 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/client"
-	"github.com/emersion/go-message/mail"
-	"github.com/joho/godotenv"
 	"go-mail/common"
 	"go-mail/component"
 	"go-mail/memcache"
@@ -19,6 +14,12 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/client"
+	"github.com/emersion/go-message/mail"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -63,17 +64,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// c4, err := m.MailConnection(email4, password4)
+
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 	c4, err := m.MailConnection(email4, password4)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//c4, err := m.MailConnection(email4, password4)
-	//
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
 
 	appCtx := component.NewAppContext(pblocal.NewPubSub(), memcache.NewCaching())
 
@@ -94,7 +95,7 @@ func main() {
 					return
 				}
 				appCtx.GetCaching().Write(c1.Mailbox().Name, ids)
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c1, Ids: ids}))
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c1, Ids: ids, Mail: email1}))
 			}
 		}()
 
@@ -106,7 +107,7 @@ func main() {
 					return
 				}
 				appCtx.GetCaching().Write(c2.Mailbox().Name, ids2)
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c2, Ids: ids2}))
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c2, Ids: ids2, Mail: email2}))
 			}
 		}()
 
@@ -118,7 +119,7 @@ func main() {
 					return
 				}
 				appCtx.GetCaching().Write(c3.Mailbox().Name, ids2)
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c3, Ids: ids2}))
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c3, Ids: ids2, Mail: email3}))
 			}
 		}()
 
@@ -130,7 +131,7 @@ func main() {
 					return
 				}
 				appCtx.GetCaching().Write(c4.Mailbox().Name, ids2)
-				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c4, Ids: ids2}))
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c4, Ids: ids2, Mail: email4}))
 			}
 		}()
 

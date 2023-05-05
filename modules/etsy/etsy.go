@@ -1,14 +1,15 @@
 package etsy
 
 import (
-	"github.com/PuerkitoBio/goquery"
-	"github.com/emersion/go-message/mail"
 	"go-mail/common"
 	"go-mail/component"
 	"io"
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/emersion/go-message/mail"
 )
 
 type etSy struct {
@@ -29,7 +30,7 @@ func NewEtsy() *etSy {
 	return &etSy{}
 }
 
-func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader) {
+func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string) {
 	e.count = 0
 	index := 0
 	for {
@@ -78,7 +79,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader) {
 								return
 							}
 
-							if sl.Eq(idx).Find(`a[style="text-decoration: none; color: #444444"]`).Text() != "" {
+							if sl.Eq(idx).Find(`a[style="text-decoration: none; color: #444444;"]`).Text() != "" {
 								// log.Println("Item:", strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""), "  ", "", -1))
 								e.orderStr.WriteString("Item: " + strings.Replace(strings.ReplaceAll(sl.Eq(idx).Text(), "\n", ""), "  ", "", -1))
 								continue
@@ -90,6 +91,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader) {
 							e.etsyOrder.OrderId = e.orderId
 						}
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
+						e.etsyOrder.Email = mailTo
 						if e.etsyOrder.TransactionId != "" {
 
 							e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)

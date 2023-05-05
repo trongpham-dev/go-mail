@@ -98,7 +98,7 @@ func contains(s []*mail.Address, str string) bool {
 	return false
 }
 
-func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []uint32) error {
+func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []uint32, mailTo string) error {
 	if len(ids) > 0 {
 		seqset := new(imap.SeqSet)
 		seqset.AddNum(ids...)
@@ -149,7 +149,7 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 
 			if contains(from, "transaction@etsy.com") {
 				etsy := etsy.NewEtsy()
-				etsy.CrawlEtsy(appCtx, mr)
+				etsy.CrawlEtsy(appCtx, mr, mailTo)
 			}
 		}
 	}

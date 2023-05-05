@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 type EtsyOrderRecord struct {
@@ -26,25 +27,27 @@ type EtsyFieldOrderDetail struct {
 }
 
 type EtsyOrderDetail struct {
-	OrderId     string  `json:"order_id"`
-	OrderDate   string  `json:"-"`
-	ItemTotal   float32 `json:"revenue"`
-	ShippingFee float32 `json:"shipping_fee"`
-	Tax         float32 `json:"tax"`
-	SalesTax    float32 `json:"platform_fee"`
-	Discount    float32 `json:"promotions"`
-	OrderTotal  float32 `json:"earning"`
+	OrderId     string    `json:"order_id"`
+	OrderDate   time.Time `json:"-"`
+	ItemTotal   float32   `json:"revenue"`
+	ShippingFee float32   `json:"shipping_fee"`
+	Tax         float32   `json:"tax"`
+	SalesTax    float32   `json:"platform_fee"`
+	Discount    float32   `json:"promotions"`
+	OrderTotal  float32   `json:"earning"`
 }
 
 type EtsyOrder struct {
-	OrderId              string  `json:"order_id"`
-	TransactionId        string  `json:"transaction_id"`
-	ProductName          string  `json:"product_name"`
-	Quantity             uint32  `json:"quantity"`
-	Price                float32 `json:"price"`
-	Personalization      string  `json:"-"`
-	ProductType          string  `json:"product_type"`
-	Personalization_Note string  `json:"personalization_note"`
+	OrderId              string    `json:"order_id"`
+	Email                string    `json:"email"`
+	TransactionId        string    `json:"transaction_id"`
+	OrderDate            time.Time `json:"-"`
+	ProductName          string    `json:"product_name"`
+	Quantity             uint32    `json:"quantity"`
+	Price                float32   `json:"price"`
+	Personalization      string    `json:"-"`
+	ProductType          string    `json:"product_type"`
+	Personalization_Note string    `json:"personalization_note"`
 }
 
 func NewEtsyOrderDetailRecord(e []EtsyFieldOrderDetail) *EtsyOrderDetailRecord {
@@ -80,7 +83,7 @@ func ExtractEtsyOrder(t string, rs *EtsyOrder) {
 	}
 
 	//ProductName
-	pattern = regexp.MustCompile("Item:.*?(.+)")
+	pattern = regexp.MustCompile("Item:\\s+(.*?)\n")
 	match = pattern.FindStringSubmatch(t)
 	if len(match) > 0 {
 		rs.ProductName = match[1]
@@ -206,8 +209,8 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 	client := &http.Client{}
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
-	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/Ino8b0grMagPHSsHB2ilT1jugd9/tables/tblXTrz3jegViPAu/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g2064tehBTDNIIE6VA737KVV6TOHQIXIOBIBX3VT")
+	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tbls3bFafW446965/records/batch_create", responseBody)
+	req.Header.Set("Authorization", "Bearer t-g206557rJWPOHLJLC4H4E262XO6D4Y5EYVZW7GCC")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -228,8 +231,8 @@ func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
 	client := &http.Client{}
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
-	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/Ino8b0grMagPHSsHB2ilT1jugd9/tables/tblZI56X5A27vfqn/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g2064tehBTDNIIE6VA737KVV6TOHQIXIOBIBX3VT")
+	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblwPkRqnAVoNwc8/records/batch_create", responseBody)
+	req.Header.Set("Authorization", "Bearer t-g206557rJWPOHLJLC4H4E262XO6D4Y5EYVZW7GCC")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -238,6 +241,7 @@ func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
 
 	res, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		panic(err)
 	}
 

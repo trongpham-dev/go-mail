@@ -12,7 +12,7 @@ func RunCrawlEtsyMailData(appCtx component.AppContext) consumerJob {
 		Title: "Crawling Etsy Mail Data",
 		Hld: func(ctx context.Context, message *pubsub.Message) error {
 			m := mailcrawl.NewMailCrawl()
-			return m.Crawl(appCtx, message.Data().Client, message.Data().Ids)
+			return m.Crawl(appCtx, message.Data().Client, message.Data().Ids, message.Data().Mail)
 		},
 	}
 }

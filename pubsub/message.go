@@ -7,9 +7,10 @@ import (
 	"github.com/emersion/go-imap/client"
 )
 
-type MailData struct{
+type MailData struct {
 	Client *client.Client
-	Ids []uint32
+	Ids    []uint32
+	Mail   string
 }
 
 // description of message that pushed to message queue by publishers then recieved by subscribers
