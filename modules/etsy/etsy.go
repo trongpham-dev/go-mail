@@ -5,6 +5,7 @@ import (
 	"go-mail/component"
 	"io"
 	"log"
+
 	"regexp"
 	"strings"
 
@@ -29,6 +30,8 @@ type etSy struct {
 func NewEtsy() *etSy {
 	return &etSy{}
 }
+var address = ""
+var cusMail = ""
 
 func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) {
 	e.count = 0
@@ -56,7 +59,20 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				if err != nil {
 					panic(err)
 				}
-				// rs := ""
+
+				doc.Find("a[href]").Each(func(index int, item *goquery.Selection) {
+					href, _ := item.Attr("href")
+					if strings.Contains(href, "mailto:") {
+						cusMail = strings.Replace(href, "mailto:", "", -1)		
+					}
+				})
+
+				doc.Find(`address[style="font-style: normal;"]`).Each(func(index int, s *goquery.Selection) {
+					address = strings.TrimSpace(s.Text())
+				})
+
+
+				//rs := ""
 				doc.Find(`div[style="font-family: arial, helvetica, sans-serif; color: #444444; font-size: 16px; line-height: 24px;"]`).Each(func(i int, s *goquery.Selection) {
 					pattern := regexp.MustCompile("Your order number is:\\s+(\\S+)")
 					match := pattern.FindStringSubmatch(s.Text())
@@ -93,6 +109,8 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
 						e.etsyOrder.Email = mailTo
 						e.etsyOrder.OrderDate = recievedAt
+						e.etsyOrder.Address = address
+						e.etsyOrder.CustMail =  cusMail
 						if e.etsyOrder.TransactionId != "" {
 
 							e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
@@ -107,6 +125,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				//
 				e.orderDetailStr = strings.Builder{}
 				e.etsyOrderDetail = EtsyOrderDetail{}
+
 				doc.Find(`td[style="border-collapse:collapse; text-align:left;"]`).Each(func(i int, s *goquery.Selection) {
 					tdRight := s.Next()
 					field := strings.ReplaceAll(strings.ReplaceAll(s.Text(), "\n", ""), "  ", "")

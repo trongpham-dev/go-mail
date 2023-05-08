@@ -41,6 +41,8 @@ type EtsyOrderDetail struct {
 type EtsyOrder struct {
 	OrderId              string  `json:"order_id"`
 	Email                string  `json:"email"`
+	CustMail			string `json:"customer_email"`
+	Address				string `json:"address"`
 	TransactionId        string  `json:"transaction_id"`
 	OrderDate            string  `json:"date"`
 	ProductName          string  `json:"product_name"`
@@ -53,7 +55,10 @@ type EtsyOrder struct {
 
 type appToken struct {
 	appAccessToken string `json:"app_access_token"`
+	Code int 	`json:"code"`
 	expire         int    `json:"expire"`
+	Message string `json:"msg"`
+	ternantAccessToken string `json:"tenant_access_token"`
 }
 
 type appInfo struct {
@@ -243,7 +248,7 @@ func GetAppAccessToken(a *appToken) error {
 		body, err := io.ReadAll(res.Body)
 		json.Unmarshal(body, a)
 
-		if a.expire > 10 {
+		if a.expire > 1820 {
 			break
 		}
 		defer res.Body.Close()
@@ -263,7 +268,7 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tbls3bFafW446965/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206579PTRIYIWYW5ZYSF4JAVXIGDLEDV6PX4HGY")
+	req.Header.Set("Authorization", "Bearer t-g206587yQLLAGY5OVDOXKDCWQDKOEF3P7AG6KUVL")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -292,7 +297,7 @@ func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblwPkRqnAVoNwc8/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206579PTRIYIWYW5ZYSF4JAVXIGDLEDV6PX4HGY")
+	req.Header.Set("Authorization", "Bearer t-g206587yQLLAGY5OVDOXKDCWQDKOEF3P7AG6KUVL")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
