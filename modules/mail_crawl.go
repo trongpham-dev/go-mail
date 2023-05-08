@@ -5,6 +5,7 @@ import (
 	"go-mail/modules/etsy"
 	"log"
 	"regexp"
+	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -147,9 +148,27 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 				return err
 			}
 
+			recivedAt, err := header.Date()
+
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			// Load American timezone
+			loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+
+			recivedAt = recivedAt.In(loc)
+
+			// log.Println(recivedAt.Format("2006/01/02 15:04"))
+
 			if contains(from, "transaction@etsy.com") {
 				etsy := etsy.NewEtsy()
-				etsy.CrawlEtsy(appCtx, mr, mailTo)
+				etsy.CrawlEtsy(appCtx, mr, mailTo, recivedAt.Format("2006/01/02 15:04"))
 			}
 		}
 	}

@@ -44,8 +44,14 @@ func main() {
 	email4 := os.Getenv("MAIL_USER4")
 	password4 := os.Getenv("MAIL_PASSWORD4")
 
-	//email5 := os.Getenv("MAIL_USER5")
-	//password5 := os.Getenv("MAIL_PASSWORD5")
+	email5 := os.Getenv("MAIL_USER5")
+	password5 := os.Getenv("MAIL_PASSWORD5")
+
+	email6 := os.Getenv("MAIL_USER6")
+	password6 := os.Getenv("MAIL_PASSWORD6")
+
+	email7 := os.Getenv("MAIL_USER7")
+	password7 := os.Getenv("MAIL_PASSWORD7")
 
 	c1, err := m.MailConnection(email1, password1)
 
@@ -64,13 +70,31 @@ func main() {
 		log.Fatal(err)
 	}
 
+	c4, err := m.MailConnection(email4, password4)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// c4, err := m.MailConnection(email4, password4)
 
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
 
-	c4, err := m.MailConnection(email4, password4)
+	c5, err := m.MailConnection(email5, password5)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c6, err := m.MailConnection(email6, password6)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c7, err := m.MailConnection(email7, password7)
 
 	if err != nil {
 		log.Fatal(err)
@@ -86,7 +110,7 @@ func main() {
 	//publish ids mail to subscriber
 	var wg sync.WaitGroup
 	for {
-		wg.Add(4)
+		wg.Add(7)
 		go func() {
 			defer wg.Done()
 			ids := m.FindUnseenMail(c1)
@@ -132,6 +156,42 @@ func main() {
 				}
 				appCtx.GetCaching().Write(c4.Mailbox().Name, ids2)
 				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c4, Ids: ids2, Mail: email4}))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			ids2 := m.FindUnseenMail(c5)
+			if len(ids2) > 0 {
+				if len(appCtx.GetCaching().Read(c5.Mailbox().Name)) > 0 {
+					return
+				}
+				appCtx.GetCaching().Write(c5.Mailbox().Name, ids2)
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c5, Ids: ids2, Mail: email5}))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			ids2 := m.FindUnseenMail(c6)
+			if len(ids2) > 0 {
+				if len(appCtx.GetCaching().Read(c6.Mailbox().Name)) > 0 {
+					return
+				}
+				appCtx.GetCaching().Write(c6.Mailbox().Name, ids2)
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c6, Ids: ids2, Mail: email6}))
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			ids2 := m.FindUnseenMail(c7)
+			if len(ids2) > 0 {
+				if len(appCtx.GetCaching().Read(c7.Mailbox().Name)) > 0 {
+					return
+				}
+				appCtx.GetCaching().Write(c7.Mailbox().Name, ids2)
+				appCtx.GetPubsub().Publish(context.Background(), common.TopicCrawlMail, pubsub.NewMessage(pubsub.MailData{Client: c7, Ids: ids2, Mail: email7}))
 			}
 		}()
 

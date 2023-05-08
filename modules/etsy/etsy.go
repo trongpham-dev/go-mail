@@ -30,7 +30,7 @@ func NewEtsy() *etSy {
 	return &etSy{}
 }
 
-func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string) {
+func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) {
 	e.count = 0
 	index := 0
 	for {
@@ -92,6 +92,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 						}
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
 						e.etsyOrder.Email = mailTo
+						e.etsyOrder.OrderDate = recievedAt
 						if e.etsyOrder.TransactionId != "" {
 
 							e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
@@ -116,6 +117,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 					ExtractEtsyOrderDetail(t, &e.etsyOrderDetail)
 				})
 
+				e.etsyOrderDetail.OrderDate = recievedAt
 				e.arrEtsyOrderDetail = make([]EtsyFieldOrderDetail, 1)
 				e.etsyOrderDetail.OrderId = e.orderId
 				e.arrEtsyOrderDetail[0] = NewEtsyFieldOrderDetail(e.etsyOrderDetail)

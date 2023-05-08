@@ -3,11 +3,12 @@ package etsy
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
-	"time"
+	"strings"
 )
 
 type EtsyOrderRecord struct {
@@ -27,27 +28,37 @@ type EtsyFieldOrderDetail struct {
 }
 
 type EtsyOrderDetail struct {
-	OrderId     string    `json:"order_id"`
-	OrderDate   time.Time `json:"-"`
-	ItemTotal   float32   `json:"revenue"`
-	ShippingFee float32   `json:"shipping_fee"`
-	Tax         float32   `json:"tax"`
-	SalesTax    float32   `json:"platform_fee"`
-	Discount    float32   `json:"promotions"`
-	OrderTotal  float32   `json:"earning"`
+	OrderId     string  `json:"order_id"`
+	OrderDate   string  `json:"date"`
+	ItemTotal   float32 `json:"revenue"`
+	ShippingFee float32 `json:"shipping_fee"`
+	Tax         float32 `json:"tax"`
+	SalesTax    float32 `json:"platform_fee"`
+	Discount    float32 `json:"promotions"`
+	OrderTotal  float32 `json:"earning"`
 }
 
 type EtsyOrder struct {
-	OrderId              string    `json:"order_id"`
-	Email                string    `json:"email"`
-	TransactionId        string    `json:"transaction_id"`
-	OrderDate            time.Time `json:"-"`
-	ProductName          string    `json:"product_name"`
-	Quantity             uint32    `json:"quantity"`
-	Price                float32   `json:"price"`
-	Personalization      string    `json:"-"`
-	ProductType          string    `json:"product_type"`
-	Personalization_Note string    `json:"personalization_note"`
+	OrderId              string  `json:"order_id"`
+	Email                string  `json:"email"`
+	TransactionId        string  `json:"transaction_id"`
+	OrderDate            string  `json:"date"`
+	ProductName          string  `json:"product_name"`
+	Quantity             uint32  `json:"quantity"`
+	Price                float32 `json:"price"`
+	Personalization      string  `json:"-"`
+	ProductType          string  `json:"product_type"`
+	Personalization_Note string  `json:"personalization_note"`
+}
+
+type appToken struct {
+	appAccessToken string `json:"app_access_token"`
+	expire         int    `json:"expire"`
+}
+
+type appInfo struct {
+	appId     string `json:"app_id"`
+	appSecret string `json:"app_secret"`
 }
 
 func NewEtsyOrderDetailRecord(e []EtsyFieldOrderDetail) *EtsyOrderDetailRecord {
@@ -112,12 +123,14 @@ func ExtractEtsyOrder(t string, rs *EtsyOrder) {
 	pattern = regexp.MustCompile("Personalization:.*?(.+)")
 	match = pattern.FindStringSubmatch(t)
 	if len(match) > 0 {
-		if match[1] != "" {
+		if strings.TrimSpace(match[1]) != "" {
 			rs.ProductType = "Personalization"
 			rs.Personalization_Note = match[1]
 		} else {
 			rs.ProductType = "Normal"
 		}
+	} else {
+		rs.ProductType = "Normal"
 	}
 
 }
@@ -205,12 +218,52 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 
 }
 
+func GetAppAccessToken(a *appToken) error {
+	for {
+		appTkn := appInfo{
+			appId:     "cli_a4b0a37dd8f8d02f",
+			appSecret: "ziCKGTkVuprRLpoV17rrzcaCkjZV5lBq",
+		}
+
+		client := &http.Client{}
+		postBody, _ := json.Marshal(appTkn)
+		responseBody := bytes.NewBuffer(postBody)
+		req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/auth/v3/app_access_token/internal", responseBody)
+		req.Header.Add("Content-Type", "application/json")
+
+		if err != nil {
+			return err
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			panic(err)
+		}
+
+		body, err := io.ReadAll(res.Body)
+		json.Unmarshal(body, a)
+
+		if a.expire > 10 {
+			break
+		}
+		defer res.Body.Close()
+	}
+	return nil
+}
+
 func CreateEtsyOrder(r *EtsyOrderRecord) error {
+	// appToken := appToken{}
+	// err := GetAppAccessToken(&appToken)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// }
+
 	client := &http.Client{}
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tbls3bFafW446965/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206557rJWPOHLJLC4H4E262XO6D4Y5EYVZW7GCC")
+	req.Header.Set("Authorization", "Bearer t-g206579PTRIYIWYW5ZYSF4JAVXIGDLEDV6PX4HGY")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -219,6 +272,7 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 
 	res, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		panic(err)
 	}
 
@@ -228,11 +282,17 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 }
 
 func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
+	// appToken := appToken{}
+	// err := GetAppAccessToken(&appToken)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// }
 	client := &http.Client{}
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblwPkRqnAVoNwc8/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206557rJWPOHLJLC4H4E262XO6D4Y5EYVZW7GCC")
+	req.Header.Set("Authorization", "Bearer t-g206579PTRIYIWYW5ZYSF4JAVXIGDLEDV6PX4HGY")
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
