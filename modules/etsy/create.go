@@ -3,6 +3,7 @@ package etsy
 import (
 	"bytes"
 	"encoding/json"
+	"go-mail/component"
 	"io"
 	"log"
 	"net/http"
@@ -41,8 +42,8 @@ type EtsyOrderDetail struct {
 type EtsyOrder struct {
 	OrderId              string  `json:"order_id"`
 	Email                string  `json:"email"`
-	CustMail			string `json:"customer_email"`
-	Address				string `json:"address"`
+	CustMail             string  `json:"customer_email"`
+	Address              string  `json:"address"`
 	TransactionId        string  `json:"transaction_id"`
 	OrderDate            string  `json:"date"`
 	ProductName          string  `json:"product_name"`
@@ -54,10 +55,10 @@ type EtsyOrder struct {
 }
 
 type appToken struct {
-	appAccessToken string `json:"app_access_token"`
-	Code int 	`json:"code"`
-	expire         int    `json:"expire"`
-	Message string `json:"msg"`
+	appAccessToken     string `json:"app_access_token"`
+	Code               int    `json:"code"`
+	expire             int    `json:"expire"`
+	Message            string `json:"msg"`
 	ternantAccessToken string `json:"tenant_access_token"`
 }
 
@@ -256,7 +257,7 @@ func GetAppAccessToken(a *appToken) error {
 	return nil
 }
 
-func CreateEtsyOrder(r *EtsyOrderRecord) error {
+func CreateEtsyOrder(appCtx component.AppContext, r *EtsyOrderRecord) error {
 	// appToken := appToken{}
 	// err := GetAppAccessToken(&appToken)
 	// if err != nil {
@@ -268,7 +269,7 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tbls3bFafW446965/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206587yQLLAGY5OVDOXKDCWQDKOEF3P7AG6KUVL")
+	req.Header.Set("Authorization", "Bearer "+appCtx.GetAppToken().AppAccessToken)
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {
@@ -286,7 +287,7 @@ func CreateEtsyOrder(r *EtsyOrderRecord) error {
 	return nil
 }
 
-func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
+func CreateEtsyOrderDetail(appCtx component.AppContext, r *EtsyOrderDetailRecord) error {
 	// appToken := appToken{}
 	// err := GetAppAccessToken(&appToken)
 	// if err != nil {
@@ -297,7 +298,7 @@ func CreateEtsyOrderDetail(r *EtsyOrderDetailRecord) error {
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblwPkRqnAVoNwc8/records/batch_create", responseBody)
-	req.Header.Set("Authorization", "Bearer t-g206587yQLLAGY5OVDOXKDCWQDKOEF3P7AG6KUVL")
+	req.Header.Set("Authorization", "Bearer "+appCtx.GetAppToken().AppAccessToken)
 	req.Header.Add("Content-Type", "application/json")
 
 	if err != nil {

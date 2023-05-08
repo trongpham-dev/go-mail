@@ -1,21 +1,26 @@
 package memcache
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
-	"log"
-	"net/http"
+	"fmt"
+
+	lark "github.com/larksuite/oapi-sdk-go/v3"
+	larkauth "github.com/larksuite/oapi-sdk-go/v3/service/auth/v3"
 )
-type appToken struct {
+
+var responseObject AppToken
+
+type AppToken struct {
 	AppAccessToken     string `json:"app_access_token"`
-    Code               int    `json:"code"`
-    Expire             int    `json:"expire"`
-    Message            string `json:"msg"`
-    TernantAccessToken string `json:"tenant_access_token"`
+	Code               int    `json:"code"`
+	Expire             int    `json:"expire"`
+	Message            string `json:"msg"`
+	TernantAccessToken string `json:"tenant_access_token"`
 }
 
 type AppAccess interface {
-	GetAppAccessToken() error
+	GetAppAccessToken() (*AppToken, error)
 }
 
 type appAccess struct {
@@ -23,38 +28,46 @@ type appAccess struct {
 	appSecret string `json:"app_secret"`
 }
 
-func NewAppToken() *appToken {
-	return &appToken{
+func NewAppToken() *AppToken {
+	return &AppToken{
 		AppAccessToken:     "",
-		Code: 0,
-		Expire: 1800,
-		Message: "",
+		Code:               0,
+		Expire:             1800,
+		Message:            "",
 		TernantAccessToken: "",
 	}
 }
 
-func (a * appToken) GetAppAccessToken()  error {
-	appInfo := appAccess{
-        appId:     "cli_a4b0a37dd8f8d02f",
-        appSecret: "ziCKGTkVuprRLpoV17rrzcaCkjZV5lBq",
-    }
-    postBody, _ := json.Marshal(appInfo)
-    responseBody := bytes.NewBuffer(postBody)
-    res, err := http.Post("https://open.larksuite.com/open-apis/auth/v3/app_access_token/internal", "application/json", responseBody)
+func (a *AppToken) GetAppAccessToken() (*AppToken, error) {
+	// 创建 Client
+	// 如需SDK自动管理租户Token的获取与刷新，可调用lark.WithEnableTokenCache(true)进行设置
+	client := lark.NewClient("cli_a4b0a37dd8f8d02f", "ziCKGTkVuprRLpoV17rrzcaCkjZV5lBq", lark.WithEnableTokenCache(true))
 
-    if err != nil {
-        log.Println(err)
-        return err
-    }
+	// 创建请求对象
+	req := larkauth.NewInternalAppAccessTokenReqBuilder().
+		Body(larkauth.NewInternalAppAccessTokenReqBodyBuilder().
+			AppId(`cli_a4b0a37dd8f8d02f`).
+			AppSecret(`ziCKGTkVuprRLpoV17rrzcaCkjZV5lBq`).
+			Build()).
+		Build()
 
-    defer res.Body.Close()
+	// 发起请求
+	// 如开启了SDK的Token管理功能，就无需在请求时调用larkcore.WithTenantAccessToken("-xxx")来手动设置租户Token了
+	resp, err := client.Auth.AppAccessToken.Internal(context.Background(), req)
 
-    var responseObject appToken
-    if err := json.NewDecoder(res.Body).Decode(&responseObject); err != nil {
-        log.Println(err)
-        return err
-    }
+	// 处理错误
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
-    log.Println("app access: ", responseObject.Expire)
-	return nil
+	// 服务端错误处理
+	if !resp.Success() {
+		fmt.Println(resp.Code, resp.Msg, resp.RequestId())
+		return nil, err
+	}
+
+	json.Unmarshal(resp.RawBody, &responseObject)
+
+	return &responseObject, nil
 }

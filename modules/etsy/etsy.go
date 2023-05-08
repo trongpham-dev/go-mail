@@ -30,6 +30,7 @@ type etSy struct {
 func NewEtsy() *etSy {
 	return &etSy{}
 }
+
 var address = ""
 var cusMail = ""
 
@@ -63,14 +64,13 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				doc.Find("a[href]").Each(func(index int, item *goquery.Selection) {
 					href, _ := item.Attr("href")
 					if strings.Contains(href, "mailto:") {
-						cusMail = strings.Replace(href, "mailto:", "", -1)		
+						cusMail = strings.Replace(href, "mailto:", "", -1)
 					}
 				})
 
 				doc.Find(`address[style="font-style: normal;"]`).Each(func(index int, s *goquery.Selection) {
 					address = strings.TrimSpace(s.Text())
 				})
-
 
 				//rs := ""
 				doc.Find(`div[style="font-family: arial, helvetica, sans-serif; color: #444444; font-size: 16px; line-height: 24px;"]`).Each(func(i int, s *goquery.Selection) {
@@ -110,14 +110,14 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 						e.etsyOrder.Email = mailTo
 						e.etsyOrder.OrderDate = recievedAt
 						e.etsyOrder.Address = address
-						e.etsyOrder.CustMail =  cusMail
+						e.etsyOrder.CustMail = cusMail
 						if e.etsyOrder.TransactionId != "" {
 
 							e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
 							i = i + 1
 
 							etsyOrderRecords := NewEtsyOrderRecord(e.arrEtsyOrder)
-							CreateEtsyOrder(etsyOrderRecords)
+							CreateEtsyOrder(appCtx, etsyOrderRecords)
 						}
 					}
 				})
@@ -141,7 +141,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				e.etsyOrderDetail.OrderId = e.orderId
 				e.arrEtsyOrderDetail[0] = NewEtsyFieldOrderDetail(e.etsyOrderDetail)
 				etsyOrderDetailRecords := NewEtsyOrderDetailRecord(e.arrEtsyOrderDetail)
-				CreateEtsyOrderDetail(etsyOrderDetailRecords)
+				CreateEtsyOrderDetail(appCtx, etsyOrderDetailRecords)
 
 				e.count = e.count + 1
 

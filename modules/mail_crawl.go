@@ -165,6 +165,8 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 			recivedAt = recivedAt.In(loc)
 
 			// log.Println(recivedAt.Format("2006/01/02 15:04"))
+			log.Println(recivedAt.Unix())
+			log.Println(recivedAt)
 
 			if contains(from, "transaction@etsy.com") {
 				etsy := etsy.NewEtsy()
