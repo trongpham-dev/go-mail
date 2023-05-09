@@ -70,7 +70,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-
 	c5, err := m.MailConnection(email5, password5)
 
 	if err != nil {
@@ -90,13 +89,6 @@ func main() {
 	}
 
 	appCtx := component.NewAppContext(pblocal.NewPubSub(), memcache.NewCaching(), memcache.NewAppToken())
-	appTkn, err := appCtx.GetAppToken().GetAppAccessToken()
-
-	if err != nil {
-		common.AppRecover()
-	}
-	appCtx.SetAppToken(appTkn)
-	log.Println("expire: ", appCtx.GetAppToken().Expire)
 
 	//subscriber.Setup(appCtx)
 	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
