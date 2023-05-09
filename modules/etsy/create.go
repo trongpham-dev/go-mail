@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"go-mail/component"
-	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -54,17 +53,36 @@ type EtsyOrder struct {
 	Personalization_Note string  `json:"personalization_note"`
 }
 
-type appToken struct {
-	appAccessToken     string `json:"app_access_token"`
-	Code               int    `json:"code"`
-	expire             int    `json:"expire"`
-	Message            string `json:"msg"`
-	ternantAccessToken string `json:"tenant_access_token"`
+type EtsyOrderShippingRecord struct {
+	Records []EtsyFieldOrderShipping `json:"records"`
 }
 
-type appInfo struct {
-	appId     string `json:"app_id"`
-	appSecret string `json:"app_secret"`
+type EtsyFieldOrderShipping struct {
+	Fields EtsyOrderShipping `json:"fields"`
+}
+
+type EtsyOrderShipping struct {
+	OrderId     string  `json:"order_id"`
+	Email                string  `json:"email"`
+	CustMail             string  `json:"customer_email"`
+	CustName			 string  `json:"customer_name"`
+	Road			 string  `json:"road"`
+	City			 string  `json:"city"`
+	State			 string  `json:"state"`
+	Zip			 string  `json:"zip"`
+	Country			 string  `json:"country"`
+}
+
+func NewEtsyOrderShippingRecord(e []EtsyFieldOrderShipping) *EtsyOrderShippingRecord {
+	return &EtsyOrderShippingRecord{
+		Records: e,
+	}
+}
+
+func NewEtsyFieldOrderShipping(e EtsyOrderShipping) EtsyFieldOrderShipping {
+	return EtsyFieldOrderShipping{
+		Fields: e,
+	}
 }
 
 func NewEtsyOrderDetailRecord(e []EtsyFieldOrderDetail) *EtsyOrderDetailRecord {
@@ -224,39 +242,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 
 }
 
-func GetAppAccessToken(a *appToken) error {
-	for {
-		appTkn := appInfo{
-			appId:     "cli_a4b0a37dd8f8d02f",
-			appSecret: "ziCKGTkVuprRLpoV17rrzcaCkjZV5lBq",
-		}
-
-		client := &http.Client{}
-		postBody, _ := json.Marshal(appTkn)
-		responseBody := bytes.NewBuffer(postBody)
-		req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/auth/v3/app_access_token/internal", responseBody)
-		req.Header.Add("Content-Type", "application/json")
-
-		if err != nil {
-			return err
-		}
-
-		res, err := client.Do(req)
-		if err != nil {
-			panic(err)
-		}
-
-		body, err := io.ReadAll(res.Body)
-		json.Unmarshal(body, a)
-
-		if a.expire > 1820 {
-			break
-		}
-		defer res.Body.Close()
-	}
-	return nil
-}
-
 func CreateEtsyOrder(appCtx component.AppContext, r *EtsyOrderRecord) error {
 	// appToken := appToken{}
 	// err := GetAppAccessToken(&appToken)
@@ -298,6 +283,35 @@ func CreateEtsyOrderDetail(appCtx component.AppContext, r *EtsyOrderDetailRecord
 	postBody, _ := json.Marshal(r)
 	responseBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblwPkRqnAVoNwc8/records/batch_create", responseBody)
+	req.Header.Set("Authorization", "Bearer "+appCtx.GetAppToken().AppAccessToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	if err != nil {
+		return err
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		panic(err)
+	}
+
+	defer res.Body.Close()
+
+	return nil
+}
+
+func CreateEtsyOrderShipping(appCtx component.AppContext, r *EtsyOrderShippingRecord) error {
+	// appToken := appToken{}
+	// err := GetAppAccessToken(&appToken)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return err
+	// }
+	client := &http.Client{}
+	postBody, _ := json.Marshal(r)
+	responseBody := bytes.NewBuffer(postBody)
+	req, err := http.NewRequest("POST", "https://open.larksuite.com/open-apis/bitable/v1/apps/KhcHb8CvtajCzUsTNBYlzxEtgId/tables/tblFiG4gWcGG5a9A/records/batch_create", responseBody)
 	req.Header.Set("Authorization", "Bearer "+appCtx.GetAppToken().AppAccessToken)
 	req.Header.Add("Content-Type", "application/json")
 

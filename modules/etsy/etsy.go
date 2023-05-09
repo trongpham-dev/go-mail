@@ -20,10 +20,13 @@ type etSy struct {
 	orderDetailStr       strings.Builder
 	arrEtsyOrder         []EtsyFieldOrder
 	arrEtsyOrderDetail   []EtsyFieldOrderDetail
+	arrEtsyOrderShipping   []EtsyFieldOrderShipping
 	etsyOrder            EtsyOrder
 	etsyFieldOrder       EtsyFieldOrder
 	etsyOrderDetail      EtsyOrderDetail
 	etsyFieldOrderDetail EtsyFieldOrderDetail
+	etsyOrderShipping      EtsyOrderShipping
+	etsyFieldOrderShipping EtsyFieldOrderShipping
 	count                int
 }
 
@@ -32,6 +35,12 @@ func NewEtsy() *etSy {
 }
 
 var address = ""
+var custName = ""
+var road	= ""
+var city = ""
+var state = ""
+var zip = ""
+var country = ""
 var cusMail = ""
 
 func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) {
@@ -122,7 +131,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 					}
 				})
 
-				//
+				//create order detail
 				e.orderDetailStr = strings.Builder{}
 				e.etsyOrderDetail = EtsyOrderDetail{}
 
@@ -144,6 +153,49 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				CreateEtsyOrderDetail(appCtx, etsyOrderDetailRecords)
 
 				e.count = e.count + 1
+
+				
+				// custName
+				doc.Find(`span[class='name']`).Each(func(i int, s *goquery.Selection) {
+					custName = s.Text()
+				})
+				// road
+				doc.Find(`span[class='first-line']`).Each(func(i int, s *goquery.Selection) {
+					road = s.Text()
+				})
+				//city
+				doc.Find(`span[class='city']`).Each(func(i int, s *goquery.Selection) {
+					city = s.Text()
+				})
+				//state
+				doc.Find(`span[class='state']`).Each(func(i int, s *goquery.Selection) {
+					state = s.Text()
+				})
+				//zip
+				doc.Find(`span[class='zip']`).Each(func(i int, s *goquery.Selection) {
+					zip = s.Text()
+				})
+				//country
+				doc.Find(`span[class='country-name']`).Each(func(i int, s *goquery.Selection) {
+					country = s.Text()
+				})
+
+				//create order shipping
+				e.etsyOrderShipping = EtsyOrderShipping{
+					OrderId: e.orderId,
+					Email: mailTo,
+					CustName: custName,
+					CustMail: cusMail,
+					Road: road,
+					City: city,
+					State: state,
+					Zip: zip,
+					Country: country,
+				}
+				e.arrEtsyOrderShipping = make([]EtsyFieldOrderShipping, 1)
+				e.arrEtsyOrderShipping[0] = NewEtsyFieldOrderShipping(e.etsyOrderShipping)
+				etsyOrderShippingRecords := NewEtsyOrderShippingRecord(e.arrEtsyOrderShipping)
+				CreateEtsyOrderShipping(appCtx, etsyOrderShippingRecords)
 
 			}
 			index++

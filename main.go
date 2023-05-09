@@ -70,11 +70,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// c4, err := m.MailConnection(email4, password4)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
 	c5, err := m.MailConnection(email5, password5)
 
@@ -101,7 +96,7 @@ func main() {
 		common.AppRecover()
 	}
 	appCtx.SetAppToken(appTkn)
-	log.Println("expire: ", appCtx.GetAppToken().AppAccessToken)
+	log.Println("expire: ", appCtx.GetAppToken().Expire)
 
 	//subscriber.Setup(appCtx)
 	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
