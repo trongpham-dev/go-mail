@@ -4,7 +4,6 @@ import (
 	"go-mail/component"
 	"go-mail/modules/etsy"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/emersion/go-imap"
@@ -116,7 +115,6 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 		}()
 
 		if err := <-done; err != nil {
-			log.Fatal(err)
 			return err
 		}
 
@@ -124,19 +122,19 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 
 		for msg := range messages {
 			if msg == nil {
-				log.Fatal("Server didn't returned message")
+				markMailAsUnseen(c, msg.SeqNum)
 			}
 
 			r := msg.GetBody(&section)
 			if r == nil {
-				log.Fatal("Server didn't returned message body")
+				markMailAsUnseen(c, msg.SeqNum)
 			}
 
 			// Create a new mail reader
 			mr, err := mail.CreateReader(r)
 
 			if err != nil {
-				log.Fatal(err)
+				markMailAsUnseen(c, msg.SeqNum)
 				return err
 			}
 
@@ -144,96 +142,58 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 			from, err := header.AddressList("From")
 
 			if err != nil {
-				log.Fatal(err)
+				markMailAsUnseen(c, msg.SeqNum)
 				return err
 			}
 
 			recivedAt, err := header.Date()
 
 			if err != nil {
-				log.Println(err)
+				markMailAsUnseen(c, msg.SeqNum)
 				return err
 			}
 
 			// Load American timezone
 			loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
 			if err != nil {
-				log.Println(err)
+				markMailAsUnseen(c, msg.SeqNum)
 				return err
 			}
 
 			recivedAt = recivedAt.In(loc)
 
 			// log.Println(recivedAt.Format("2006/01/02 15:04"))
-			log.Println(recivedAt.Unix())
-			log.Println(recivedAt)
+			// log.Println(recivedAt.Unix())
+			// log.Println(recivedAt)
 
 			if contains(from, "transaction@etsy.com") {
 				etsy := etsy.NewEtsy()
-				etsy.CrawlEtsy(appCtx, mr, mailTo, recivedAt.Format("2006/01/02 15:04"))
+				if err = etsy.CrawlEtsy(appCtx, mr, mailTo, recivedAt.Format("2006/01/02 15:04")); err != nil {
+					markMailAsUnseen(c, msg.SeqNum)
+					return err
+				}
+
 			}
 		}
 	}
+
 	//remove all mails from cache.
 	appCtx.GetCaching().Write(c.Mailbox().Name, []uint32{})
 	return nil
 }
 
-func FindOrderInfor(t string) *amazonOrderInfo {
-	var rs = amazonOrderInfo{}
+func markMailAsUnseen(c *client.Client, uid uint32) error {
+	// mark mail as unseen
+	seqSet := new(imap.SeqSet)
+	seqSet.AddNum(uid)
 
-	//extracting Ship By
-	pattern := regexp.MustCompile("Ship by:\\s+([\\d/]+)")
-	rs.ShipBy = pattern.FindString(t)
-	rs.ShipBy = rs.ShipBy[8:len(rs.ShipBy)]
+	item := imap.FormatFlagsOp(imap.RemoveFlags, true)
+	flags := []interface{}{imap.SeenFlag}
+	err := c.Store(seqSet, item, flags, nil)
 
-	//extracting item name
-	pattern = regexp.MustCompile("Item:\\s+(\\S+)")
-	rs.Item = pattern.FindString(t)
+	if err != nil {
+		return err
+	}
 
-	//extracting condition
-	pattern = regexp.MustCompile("Condition:\\s+(\\S+)")
-	rs.Condition = pattern.FindString(t)
-
-	//extracting SKU
-	pattern = regexp.MustCompile("SKU:\\s+(\\S+)")
-	rs.SKU = pattern.FindString(t)
-
-	//extracting quantity
-	pattern = regexp.MustCompile("Quantity:\\s+(\\d+)")
-	rs.Quantity = pattern.FindString(t)
-
-	//extracting orderdate
-	pattern = regexp.MustCompile("Order date:\\s+([\\d/]+)")
-	rs.OrderDate = pattern.FindString(t)
-
-	//extracting price
-	pattern = regexp.MustCompile("Price:\\s+\\$(\\d+\\.\\d+)")
-	rs.Price = pattern.FindString(t)
-
-	//extracting Tax
-	pattern = regexp.MustCompile("Tax:\\s+\\$(\\d+\\.\\d+)")
-	rs.Tax = pattern.FindString(t)
-
-	//extracting Shipping
-	pattern = regexp.MustCompile("Shipping:\\s+\\$(\\d+\\.\\d+)")
-	rs.Shipping = pattern.FindString(t)
-
-	//extracting Promotion
-	pattern = regexp.MustCompile("Promotions:\\s+-\\$(\\d+\\.\\d+)")
-	rs.Promotions = pattern.FindString(t)
-
-	//extracting Amazon fee
-	pattern = regexp.MustCompile("Amazon fees:\\s+-\\$(\\d+\\.\\d+)")
-	rs.AmazonFee = pattern.FindString(t)
-
-	//extracting Marketplace Facilitator Tax
-	pattern = regexp.MustCompile("Marketplace Facilitator Tax:\\s+-\\$(\\d+\\.\\d+)")
-	rs.MarketPlaceFacilitatorTax = pattern.FindString(t)
-
-	//extracting Your earnings
-	pattern = regexp.MustCompile("Your earnings:\\s+\\$(\\d+\\.\\d+)")
-	rs.YourEarning = pattern.FindString(t)
-
-	return &rs
+	return nil
 }

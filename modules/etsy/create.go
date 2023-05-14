@@ -3,12 +3,12 @@ package etsy
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"go-mail/component"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 type EtsyOrderRecord struct {
@@ -39,18 +39,18 @@ type EtsyOrderDetail struct {
 }
 
 type EtsyOrder struct {
-	OrderId              string  `json:"order_id"`
-	Email                string  `json:"email"`
-	CustMail             string  `json:"customer_email"`
-	Address              string  `json:"address"`
-	TransactionId        string  `json:"transaction_id"`
-	OrderDate            string  `json:"date"`
-	ProductName          string  `json:"product_name"`
-	Quantity             uint32  `json:"quantity"`
-	Price                float32 `json:"price"`
-	Personalization      string  `json:"-"`
-	ProductType          string  `json:"product_type"`
-	Personalization_Note string  `json:"personalization_note"`
+	OrderId string `json:"order_id"`
+	Email   string `json:"email"`
+	// CustMail      string  `json:"customer_email"`
+	// Address       string  `json:"address"`
+	TransactionId string  `json:"transaction_id"`
+	OrderDate     string  `json:"date"`
+	ProductName   string  `json:"product_name"`
+	Quantity      uint32  `json:"quantity"`
+	Price         float32 `json:"price"`
+	// Personalization      string  `json:"-"`
+	// ProductType          string  `json:"-"`
+	Personalization_Note string `json:"personalization_note"`
 }
 
 type EtsyOrderShippingRecord struct {
@@ -138,24 +138,24 @@ func ExtractEtsyOrder(t string, rs *EtsyOrder) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
+
 			return
 		}
 		rs.Price = float32(dollarValue)
 	}
 
-	pattern = regexp.MustCompile("Personalization:.*?(.+)")
-	match = pattern.FindStringSubmatch(t)
-	if len(match) > 0 {
-		if strings.TrimSpace(match[1]) != "" {
-			rs.ProductType = "Personalization"
-			rs.Personalization_Note = match[1]
-		} else {
-			rs.ProductType = "Normal"
-		}
-	} else {
-		rs.ProductType = "Normal"
-	}
+	// pattern = regexp.MustCompile("Personalization:.*?(.+)")
+	// match = pattern.FindStringSubmatch(t)
+	// if len(match) > 0 {
+	// 	if strings.TrimSpace(match[1]) != "" {
+	// 		rs.ProductType = "Personalization"
+	// 		rs.Personalization_Note = match[1]
+	// 	} else {
+	// 		rs.ProductType = "Normal"
+	// 	}
+	// } else {
+	// 	rs.ProductType = "Normal"
+	// }
 
 }
 
@@ -168,7 +168,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.ItemTotal = float32(dollarValue)
@@ -182,7 +181,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.Discount = float32(dollarValue)
@@ -195,7 +193,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.ShippingFee = float32(dollarValue)
@@ -208,7 +205,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.Tax = float32(dollarValue)
@@ -221,7 +217,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.SalesTax = float32(dollarValue)
@@ -234,7 +229,6 @@ func ExtractEtsyOrderDetail(t string, rs *EtsyOrderDetail) {
 		dollarStr = regexp.MustCompile(",").ReplaceAllString(dollarStr, "")
 		dollarValue, err := strconv.ParseFloat(dollarStr, 64)
 		if err != nil {
-			log.Fatal(err)
 			return
 		}
 		rs.OrderTotal = float32(dollarValue)
@@ -253,7 +247,8 @@ type Response struct {
 
 func CreateEtsyOrder(appCtx component.AppContext, r *EtsyOrderRecord) error {
 	var res *http.Response
-	for {
+	var response Response
+	for i := 1; i <= 3; i++ {
 		appTkn, err := appCtx.GetAppToken().GetAppAccessToken()
 
 		if err != nil {
@@ -275,11 +270,9 @@ func CreateEtsyOrder(appCtx component.AppContext, r *EtsyOrderRecord) error {
 		res, err = client.Do(req)
 
 		if err != nil {
-			log.Println(err)
 			return err
 		}
 
-		var response Response
 		err = json.NewDecoder(res.Body).Decode(&response)
 		if err != nil {
 			return err
@@ -290,12 +283,18 @@ func CreateEtsyOrder(appCtx component.AppContext, r *EtsyOrderRecord) error {
 		}
 		defer res.Body.Close()
 	}
+
+	if response.Code != 0 {
+
+		return errors.New("can not create order!")
+	}
 	return nil
 }
 
 func CreateEtsyOrderDetail(appCtx component.AppContext, r *EtsyOrderDetailRecord) error {
 	var res *http.Response
-	for {
+	var response Response
+	for i := 1; i <= 3; i++ {
 		appTkn, err := appCtx.GetAppToken().GetAppAccessToken()
 
 		if err != nil {
@@ -321,7 +320,6 @@ func CreateEtsyOrderDetail(appCtx component.AppContext, r *EtsyOrderDetailRecord
 			return err
 		}
 
-		var response Response
 		err = json.NewDecoder(res.Body).Decode(&response)
 		if err != nil {
 			return err
@@ -333,12 +331,17 @@ func CreateEtsyOrderDetail(appCtx component.AppContext, r *EtsyOrderDetailRecord
 	}
 	defer res.Body.Close()
 
+	if response.Code != 0 {
+
+		return errors.New("can not create order!")
+	}
 	return nil
 }
 
 func CreateEtsyOrderShipping(appCtx component.AppContext, r *EtsyOrderShippingRecord) error {
 	var res *http.Response
-	for {
+	var response Response
+	for i := 1; i <= 3; i++ {
 		appTkn, err := appCtx.GetAppToken().GetAppAccessToken()
 
 		if err != nil {
@@ -375,6 +378,11 @@ func CreateEtsyOrderShipping(appCtx component.AppContext, r *EtsyOrderShippingRe
 	}
 
 	defer res.Body.Close()
+
+	if response.Code != 0 {
+
+		return errors.New("can not create order!")
+	}
 
 	return nil
 }

@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine AS build
+FROM golang:1.19-alpine AS build
 
 WORKDIR /app
 
@@ -13,5 +13,7 @@ WORKDIR /app
 COPY --from=build /app/main .
 
 COPY .env /app/.env
+
+RUN apk add --no-cache tzdata
 
 CMD ["/app/main"]

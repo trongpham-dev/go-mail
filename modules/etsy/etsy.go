@@ -1,7 +1,6 @@
 package etsy
 
 import (
-	"go-mail/common"
 	"go-mail/component"
 	"io"
 	"log"
@@ -14,20 +13,20 @@ import (
 )
 
 type etSy struct {
-	idx                  int
-	orderId              string
-	orderStr             strings.Builder
-	orderDetailStr       strings.Builder
-	arrEtsyOrder         []EtsyFieldOrder
-	arrEtsyOrderDetail   []EtsyFieldOrderDetail
+	idx                    int
+	orderId                string
+	orderStr               strings.Builder
+	orderDetailStr         strings.Builder
+	arrEtsyOrder           []EtsyFieldOrder
+	arrEtsyOrderDetail     []EtsyFieldOrderDetail
 	arrEtsyOrderShipping   []EtsyFieldOrderShipping
-	etsyOrder            EtsyOrder
-	etsyFieldOrder       EtsyFieldOrder
-	etsyOrderDetail      EtsyOrderDetail
-	etsyFieldOrderDetail EtsyFieldOrderDetail
+	etsyOrder              EtsyOrder
+	etsyFieldOrder         EtsyFieldOrder
+	etsyOrderDetail        EtsyOrderDetail
+	etsyFieldOrderDetail   EtsyFieldOrderDetail
 	etsyOrderShipping      EtsyOrderShipping
 	etsyFieldOrderShipping EtsyFieldOrderShipping
-	count                int
+	count                  int
 }
 
 func NewEtsy() *etSy {
@@ -36,22 +35,23 @@ func NewEtsy() *etSy {
 
 var address = ""
 var custName = ""
-var road	= ""
+var road = ""
 var city = ""
 var state = ""
 var zip = ""
 var country = ""
 var cusMail = ""
 
-func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) {
+func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) error {
 	e.count = 0
 	index := 0
+	var myErr error
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			common.AppRecover()
+			return err
 			//log.Fatal(err)
 		}
 
@@ -67,7 +67,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				//log.Println(text)
 
 				if err != nil {
-					panic(err)
+					return err
 				}
 
 				doc.Find("a[href]").Each(func(index int, item *goquery.Selection) {
@@ -118,15 +118,19 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
 						e.etsyOrder.Email = mailTo
 						e.etsyOrder.OrderDate = recievedAt
-						e.etsyOrder.Address = address
-						e.etsyOrder.CustMail = cusMail
+						// e.etsyOrder.Address = address
+						// e.etsyOrder.CustMail = cusMail
 						if e.etsyOrder.TransactionId != "" {
 
 							e.arrEtsyOrder[i] = NewEtsyFieldOrder(e.etsyOrder)
 							i = i + 1
 
 							etsyOrderRecords := NewEtsyOrderRecord(e.arrEtsyOrder)
-							CreateEtsyOrder(appCtx, etsyOrderRecords)
+							myErr = CreateEtsyOrder(appCtx, etsyOrderRecords)
+							if myErr != nil {
+								return
+							}
+
 						}
 					}
 				})
@@ -150,11 +154,10 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				e.etsyOrderDetail.OrderId = e.orderId
 				e.arrEtsyOrderDetail[0] = NewEtsyFieldOrderDetail(e.etsyOrderDetail)
 				etsyOrderDetailRecords := NewEtsyOrderDetailRecord(e.arrEtsyOrderDetail)
-				CreateEtsyOrderDetail(appCtx, etsyOrderDetailRecords)
+				myErr = CreateEtsyOrderDetail(appCtx, etsyOrderDetailRecords)
 
 				e.count = e.count + 1
 
-				
 				// custName
 				doc.Find(`span[class='name']`).Each(func(i int, s *goquery.Selection) {
 					custName = s.Text()
@@ -182,20 +185,20 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 
 				//create order shipping
 				e.etsyOrderShipping = EtsyOrderShipping{
-					OrderId: e.orderId,
-					Email: mailTo,
+					OrderId:  e.orderId,
+					Email:    mailTo,
 					CustName: custName,
 					CustMail: cusMail,
-					Road: road,
-					City: city,
-					State: state,
-					Zip: zip,
-					Country: country,
+					Road:     road,
+					City:     city,
+					State:    state,
+					Zip:      zip,
+					Country:  country,
 				}
 				e.arrEtsyOrderShipping = make([]EtsyFieldOrderShipping, 1)
 				e.arrEtsyOrderShipping[0] = NewEtsyFieldOrderShipping(e.etsyOrderShipping)
 				etsyOrderShippingRecords := NewEtsyOrderShippingRecord(e.arrEtsyOrderShipping)
-				CreateEtsyOrderShipping(appCtx, etsyOrderShippingRecords)
+				myErr = CreateEtsyOrderShipping(appCtx, etsyOrderShippingRecords)
 
 			}
 			index++
@@ -207,4 +210,10 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 		}
 
 	}
+
+	if myErr != nil {
+		return myErr
+	}
+
+	return nil
 }

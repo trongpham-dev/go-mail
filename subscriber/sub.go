@@ -69,7 +69,7 @@ func (engine *consumerEngine) startSubTopic(topic pubsub.Topic, isConcurrent boo
 
 			// run group of jobs
 			if err := group.Run(context.Background()); err != nil {
-				log.Println(err)
+
 			}
 		}
 	}()
