@@ -35,6 +35,7 @@ func (m *mailCrawl) MailConnection(email, password string) (*client.Client, erro
 		return nil, err
 	}
 	log.Println(email, "logged in!")
+
 	return c, nil
 }
 

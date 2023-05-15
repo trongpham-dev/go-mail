@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -101,6 +102,15 @@ func main() {
 		wg.Add(7)
 		go func() {
 			defer wg.Done()
+			err := c1.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c1, err = m.MailConnection(email1, password1)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids := m.FindUnseenMail(c1)
 			if len(ids) > 0 {
 				if len(appCtx.GetCaching().Read(c1.Mailbox().Name)) > 0 {
@@ -113,6 +123,15 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c2.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c2, err = m.MailConnection(email2, password2)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids2 := m.FindUnseenMail(c2)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c2.Mailbox().Name)) > 0 {
@@ -125,6 +144,16 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c3.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c3, err = m.MailConnection(email3, password3)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
+
 			ids2 := m.FindUnseenMail(c3)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c3.Mailbox().Name)) > 0 {
@@ -137,6 +166,15 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c4.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c4, err = m.MailConnection(email4, password4)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids2 := m.FindUnseenMail(c4)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c4.Mailbox().Name)) > 0 {
@@ -149,6 +187,15 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c5.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c5, err = m.MailConnection(email5, password5)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids2 := m.FindUnseenMail(c5)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c5.Mailbox().Name)) > 0 {
@@ -161,6 +208,15 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c6.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c6, err = m.MailConnection(email6, password6)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids2 := m.FindUnseenMail(c6)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c6.Mailbox().Name)) > 0 {
@@ -173,6 +229,15 @@ func main() {
 
 		go func() {
 			defer wg.Done()
+			err := c7.Noop()
+			if err != nil {
+				log.Println("Connection lost")
+				c7, err = m.MailConnection(email7, password7)
+
+				if err != nil {
+					log.Println(err)
+				}
+			}
 			ids2 := m.FindUnseenMail(c7)
 			if len(ids2) > 0 {
 				if len(appCtx.GetCaching().Read(c7.Mailbox().Name)) > 0 {
@@ -183,7 +248,8 @@ func main() {
 			}
 		}()
 
+		<-time.After(1 * time.Minute)
+
 		wg.Wait()
 	}
-	//  start()
 }

@@ -116,7 +116,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 							e.etsyOrder.OrderId = e.orderId
 						}
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
-						e.etsyOrder.Email = mailTo
+						e.etsyOrder.ShopName = getShopName(mailTo)
 						e.etsyOrder.OrderDate = recievedAt
 						// e.etsyOrder.Address = address
 						// e.etsyOrder.CustMail = cusMail
@@ -216,4 +216,25 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 	}
 
 	return nil
+}
+
+func getShopName(mail string) string {
+	shopName := ""
+	switch mail {
+	case "khanhlinhquachvietnam@gmail.com":
+		shopName = "LIQ"
+	case "ecoprimevietnam@gmail.com":
+		shopName = "Paracel"
+	case "oanhle310794@gmail.com":
+		shopName = "Wong"
+	case "newecoprime@gmail.com":
+		shopName = "Kidscrafters"
+	case "hangle254301@gmail.com":
+		shopName = "Clackee"
+	case "ngocanhleexyz@gmail.com":
+		shopName = "Tatsuhouse"
+	case "henryhousestore@gmail.com":
+		shopName = "Henryhouses"
+	}
+	return shopName
 }

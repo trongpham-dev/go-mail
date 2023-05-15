@@ -40,8 +40,8 @@ type EtsyOrderDetail struct {
 }
 
 type EtsyOrder struct {
-	OrderId string `json:"order_id"`
-	Email   string `json:"email"`
+	OrderId  string `json:"order_id"`
+	ShopName string `json:"shop_name"`
 	// CustMail      string  `json:"customer_email"`
 	// Address       string  `json:"address"`
 	TransactionId        string  `json:"transaction_id"`
