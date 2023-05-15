@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type EtsyOrderRecord struct {
@@ -43,14 +44,14 @@ type EtsyOrder struct {
 	Email   string `json:"email"`
 	// CustMail      string  `json:"customer_email"`
 	// Address       string  `json:"address"`
-	TransactionId string  `json:"transaction_id"`
-	OrderDate     string  `json:"date"`
-	ProductName   string  `json:"product_name"`
-	Quantity      uint32  `json:"quantity"`
-	Price         float32 `json:"price"`
-	// Personalization      string  `json:"-"`
-	// ProductType          string  `json:"-"`
-	Personalization_Note string `json:"personalization_note"`
+	TransactionId        string  `json:"transaction_id"`
+	OrderDate            string  `json:"date"`
+	ProductName          string  `json:"product_name"`
+	Quantity             uint32  `json:"quantity"`
+	Price                float32 `json:"price"`
+	Personalization      string  `json:"-"`
+	ProductType          string  `json:"-"`
+	Personalization_Note string  `json:"personalization_note"`
 }
 
 type EtsyOrderShippingRecord struct {
@@ -144,18 +145,18 @@ func ExtractEtsyOrder(t string, rs *EtsyOrder) {
 		rs.Price = float32(dollarValue)
 	}
 
-	// pattern = regexp.MustCompile("Personalization:.*?(.+)")
-	// match = pattern.FindStringSubmatch(t)
-	// if len(match) > 0 {
-	// 	if strings.TrimSpace(match[1]) != "" {
-	// 		rs.ProductType = "Personalization"
-	// 		rs.Personalization_Note = match[1]
-	// 	} else {
-	// 		rs.ProductType = "Normal"
-	// 	}
-	// } else {
-	// 	rs.ProductType = "Normal"
-	// }
+	pattern = regexp.MustCompile("Personalization:.*?(.+)")
+	match = pattern.FindStringSubmatch(t)
+	if len(match) > 0 {
+		if strings.TrimSpace(match[1]) != "" {
+			rs.ProductType = "Personalization"
+			rs.Personalization_Note = match[1]
+		} else {
+			rs.ProductType = "Normal"
+		}
+	} else {
+		rs.ProductType = "Normal"
+	}
 
 }
 
