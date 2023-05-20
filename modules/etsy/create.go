@@ -64,7 +64,7 @@ type EtsyFieldOrderShipping struct {
 
 type EtsyOrderShipping struct {
 	OrderId  string `json:"order_id"`
-	Email    string `json:"email"`
+	ShopName string `json:"shop_name"`
 	CustMail string `json:"customer_email"`
 	CustName string `json:"customer_name"`
 	Road     string `json:"road"`

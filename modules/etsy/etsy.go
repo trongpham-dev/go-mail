@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	_ "github.com/emersion/go-message/charset"
 	"github.com/emersion/go-message/mail"
 )
 
@@ -41,6 +42,7 @@ var state = ""
 var zip = ""
 var country = ""
 var cusMail = ""
+var shopName = ""
 
 func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo string, recievedAt string) error {
 	e.count = 0
@@ -69,6 +71,8 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				if err != nil {
 					return err
 				}
+
+				shopName = getShopName(mailTo)
 
 				doc.Find("a[href]").Each(func(index int, item *goquery.Selection) {
 					href, _ := item.Attr("href")
@@ -116,7 +120,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 							e.etsyOrder.OrderId = e.orderId
 						}
 						ExtractEtsyOrder(e.orderStr.String(), &e.etsyOrder)
-						e.etsyOrder.ShopName = getShopName(mailTo)
+						e.etsyOrder.ShopName = shopName
 						e.etsyOrder.OrderDate = recievedAt
 						// e.etsyOrder.Address = address
 						// e.etsyOrder.CustMail = cusMail
@@ -186,7 +190,7 @@ func (e *etSy) CrawlEtsy(appCtx component.AppContext, mr *mail.Reader, mailTo st
 				//create order shipping
 				e.etsyOrderShipping = EtsyOrderShipping{
 					OrderId:  e.orderId,
-					Email:    mailTo,
+					ShopName: shopName,
 					CustName: custName,
 					CustMail: cusMail,
 					Road:     road,

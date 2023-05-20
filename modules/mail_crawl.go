@@ -1,6 +1,7 @@
 package mailcrawl
 
 import (
+	"go-mail/common"
 	"go-mail/component"
 	"go-mail/modules/etsy"
 	"log"
@@ -19,19 +20,16 @@ func NewMailCrawl() *mailCrawl {
 }
 
 func (m *mailCrawl) MailConnection(email, password string) (*client.Client, error) {
-	log.Println(email, " is connecting to server!")
 
 	// Connect to server
 	c, err := client.DialTLS("imap.gmail.com:993", nil)
 
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 
 	// Login
 	if err := c.Login(email, password); err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 	log.Println(email, "logged in!")
@@ -43,7 +41,7 @@ func (m *mailCrawl) FindUnseenMail(c *client.Client) []uint32 {
 	_, err := c.Select("INBOX", false)
 
 	if err != nil {
-		log.Fatal(err)
+		common.AppRecover()
 		return nil
 	}
 
@@ -53,7 +51,7 @@ func (m *mailCrawl) FindUnseenMail(c *client.Client) []uint32 {
 	criteria3 := imap.NewSearchCriteria()
 
 	criteria1.WithoutFlags = []string{imap.SeenFlag}
-	criteria1.Text = []string{"Congratulations! You just sold an item on Amazon!"}
+	criteria1.Text = []string{"We've finished processing your Etsy sale"}
 
 	criteria2.WithoutFlags = []string{imap.SeenFlag}
 	criteria2.Text = []string{"Congratulations on your Etsy"}
@@ -64,7 +62,7 @@ func (m *mailCrawl) FindUnseenMail(c *client.Client) []uint32 {
 	ids, err := c.Search(criteria3)
 
 	if err != nil {
-		log.Fatal(err)
+		common.AppRecover()
 		return nil
 	}
 
@@ -122,6 +120,7 @@ func (m *mailCrawl) Crawl(appCtx component.AppContext, c *client.Client, ids []u
 		log.Println("Unseen messages:")
 
 		for msg := range messages {
+
 			if msg == nil {
 				markMailAsUnseen(c, msg.SeqNum)
 			}

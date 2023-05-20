@@ -21,7 +21,7 @@ func main() {
 	err := godotenv.Load(".env")
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 
@@ -51,49 +51,49 @@ func main() {
 	c1, err := m.MailConnection(email1, password1)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	c2, err := m.MailConnection(email2, password2)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	c3, err := m.MailConnection(email3, password3)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	c4, err := m.MailConnection(email4, password4)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	c5, err := m.MailConnection(email5, password5)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	c6, err := m.MailConnection(email6, password6)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	c7, err := m.MailConnection(email7, password7)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	appCtx := component.NewAppContext(pblocal.NewPubSub(), memcache.NewCaching(), memcache.NewAppToken())
 
 	//subscriber.Setup(appCtx)
 	if err := subscriber.NewEngine(appCtx).Start(); err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
 
 	// //publish ids mail to subscriber
